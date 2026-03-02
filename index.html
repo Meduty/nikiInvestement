@@ -416,7 +416,7 @@ document.getElementById('runSim').addEventListener('click', function() {
       responsive: true,
       plugins: {
         legend: { display: false },
-        title: { display: true, text: 'S&P 500 Monte Carlo Paths  (risk-adjusted \u03bc=' + (adjReturn * 100).toFixed(1) + '%, \u03c3=' + (adjVol * 100).toFixed(1) + '%)' }
+        title: { display: true, text: 'S&P 500 Monte Carlo Paths  (risk-adjusted μ=' + (adjReturn * 100).toFixed(1) + '%, σ=' + (adjVol * 100).toFixed(1) + '%)' }
       },
       scales: {
         x: { title: { display: true, text: 'Time' }, ticks: { maxTicksLimit: years + 1 }, grid: { color: '#1e293b' } },
@@ -510,7 +510,7 @@ document.getElementById('runDCF').addEventListener('click', function() {
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: 'DCF \u2013 Cash Flows vs Present Values' }
+        title: { display: true, text: 'DCF – Cash Flows vs Present Values' }
       },
       scales: {
         x: { grid: { color: '#1e293b' } },
@@ -534,12 +534,12 @@ document.getElementById('runDCF').addEventListener('click', function() {
     '<tbody>' + rows + '</tbody></table>' +
     '<div class="summary-box ' + (isPositive ? '' : 'negative') + '">' +
     '<p><strong>Sum of Discounted Cash Flows:</strong> $' + fmt(runningPV) + '</p>' +
-    '<p><strong>Terminal Value:</strong> $' + fmt(terminalValue) + ' &nbsp;\u2192&nbsp; <strong>PV of Terminal:</strong> $' + fmt(pvTerminal) + '</p>' +
+    '<p><strong>Terminal Value:</strong> $' + fmt(terminalValue) + ' &nbsp;→&nbsp; <strong>PV of Terminal:</strong> $' + fmt(pvTerminal) + '</p>' +
     '<p><strong>Total Enterprise Value:</strong> $' + fmt(totalPV) + '</p>' +
     '<p><strong>Initial Investment:</strong> $' + fmt(initial) + '</p>' +
     '<p style="font-size:1.1rem;"><strong>Net Present Value (NPV):</strong> ' +
     '<span style="color:' + (isPositive ? '#06d6a0' : '#f472b6') + ';font-weight:700;">$' + fmt(npv) + '</span></p>' +
-    '<p>' + (isPositive ? '\u2705 The investment appears to create value.' : '\u274c The investment does not meet the required return.') + '</p>' +
+    '<p>' + (isPositive ? '✅ The investment appears to create value.' : '❌ The investment does not meet the required return.') + '</p>' +
     '</div>';
 });
 
@@ -581,7 +581,7 @@ document.getElementById('runGrowth').addEventListener('click', function() {
   var finalNominal  = totalValue[years];
   var finalReal     = totalValueReal[years];
   var totalReturn   = finalNominal - totalInvested;
-  var returnPct     = totalInvested > 0 ? ((finalNominal / totalInvested - 1) * 100) : 0;
+  var totalReturnPct = totalInvested > 0 ? ((finalNominal / totalInvested - 1) * 100) : 0;
 
   if (growthChartInstance) growthChartInstance.destroy();
   growthChartInstance = new Chart(document.getElementById('growthChart'), {
@@ -643,7 +643,7 @@ document.getElementById('runGrowth').addEventListener('click', function() {
     '<p><strong>Total Contributed:</strong> $' + fmt(totalInvested) + '</p>' +
     '<p><strong>Final Value (Nominal):</strong> <span style="color:#22d3ee;font-weight:700;">$' + fmt(finalNominal) + '</span></p>' +
     '<p><strong>Final Value (Inflation-Adjusted):</strong> <span style="color:#a78bfa;font-weight:700;">$' + fmt(finalReal) + '</span></p>' +
-    '<p><strong>Total Investment Return:</strong> <span style="color:#06d6a0;font-weight:700;">$' + fmt(totalReturn) + '</span> (' + fmt(returnPct) + '%)</p>' +
+    '<p><strong>Total Investment Return:</strong> <span style="color:#06d6a0;font-weight:700;">$' + fmt(totalReturn) + '</span> (' + fmt(totalReturnPct) + '%)</p>' +
     '<p><strong>Purchasing Power Lost to Inflation:</strong> <span style="color:#f472b6;">$' + fmt(finalNominal - finalReal) + '</span></p>' +
     '</div>';
 });
