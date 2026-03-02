@@ -1,1 +1,444 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Niki Investment – S&amp;P 500 Simulation &amp; DCF Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #1a237e;
+      --accent: #00897b;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #212121;
+      --muted: #757575;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    header { background: var(--primary); color: #fff; padding: 1.5rem 2rem; text-align: center; }
+    header h1 { font-size: 1.8rem; margin-bottom: .25rem; }
+    header p { color: #b0bec5; font-size: .95rem; }
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; display: flex; flex-direction: column; gap: 2rem; }
+    .card { background: var(--card); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 1.5rem 2rem; }
+    .card h2 { color: var(--primary); margin-bottom: 1rem; font-size: 1.35rem; border-bottom: 2px solid var(--accent); padding-bottom: .4rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .field { display: flex; flex-direction: column; gap: .25rem; }
+    .field label { font-size: .85rem; font-weight: 600; color: var(--muted); }
+    .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .field input[type="number"], .field input[type="text"] {
+      padding: .45rem .6rem; border: 1px solid #ccc; border-radius: 6px; font-size: .95rem;
+    }
+    .field .range-value { text-align: right; font-size: .8rem; color: var(--accent); font-weight: 700; }
+    .btn { display: inline-block; padding: .6rem 1.6rem; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; transition: opacity .2s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .chart-container { position: relative; width: 100%; max-height: 400px; margin-top: 1rem; }
+    .results-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .results-table th, .results-table td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid #e0e0e0; font-size: .92rem; }
+    .results-table th { background: var(--primary); color: #fff; }
+    .results-table tr:nth-child(even) { background: #f9f9f9; }
+    .summary-box { margin-top: 1rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid var(--accent); border-radius: 4px; }
+    .summary-box.negative { background: #fce4ec; border-left-color: #c62828; }
+    .summary-box p { margin: .2rem 0; }
+    footer { text-align: center; padding: 1.5rem; color: var(--muted); font-size: .82rem; }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Niki Investment Dashboard</h1>
+  <p>S&amp;P 500 Performance Simulation &amp; Discounted Cash Flow Analysis</p>
+</header>
+
+<main>
+
+  <!-- ======================== S&P 500 SIMULATION ======================== -->
+  <section class="card" id="simulation-section">
+    <h2>S&amp;P 500 Performance Simulation</h2>
+    <p style="margin-bottom:1rem;color:var(--muted);font-size:.9rem;">
+      Adjust the political and socioeconomic risk parameters below, then run Monte Carlo simulations
+      to project potential S&amp;P 500 index paths over the chosen horizon.
+    </p>
+
+    <h3 style="margin:.8rem 0 .5rem;font-size:1rem;color:var(--accent);">Market Parameters</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="startIndex">Starting Index Level</label>
+        <input type="number" id="startIndex" value="5000" min="100" step="100">
+      </div>
+      <div class="field">
+        <label for="years">Investment Horizon (years)</label>
+        <input type="number" id="years" value="10" min="1" max="50">
+      </div>
+      <div class="field">
+        <label for="simCount">Number of Simulations</label>
+        <input type="number" id="simCount" value="50" min="5" max="200">
+      </div>
+      <div class="field">
+        <label for="baseReturn">Base Annual Return (%)</label>
+        <input type="number" id="baseReturn" value="10" step="0.5">
+      </div>
+      <div class="field">
+        <label for="baseVol">Base Annual Volatility (%)</label>
+        <input type="number" id="baseVol" value="15" step="0.5">
+      </div>
+    </div>
+
+    <h3 style="margin:.8rem 0 .5rem;font-size:1rem;color:var(--accent);">Political Risk Factors</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="polStability">Political Stability Risk</label>
+        <input type="range" id="polStability" min="0" max="10" value="3" step="1">
+        <span class="range-value" id="polStability-val">3 / 10</span>
+      </div>
+      <div class="field">
+        <label for="tradePolicy">Trade Policy Risk</label>
+        <input type="range" id="tradePolicy" min="0" max="10" value="4" step="1">
+        <span class="range-value" id="tradePolicy-val">4 / 10</span>
+      </div>
+      <div class="field">
+        <label for="regulatoryRisk">Regulatory / Tax Risk</label>
+        <input type="range" id="regulatoryRisk" min="0" max="10" value="3" step="1">
+        <span class="range-value" id="regulatoryRisk-val">3 / 10</span>
+      </div>
+      <div class="field">
+        <label for="geopolitical">Geopolitical Tension</label>
+        <input type="range" id="geopolitical" min="0" max="10" value="5" step="1">
+        <span class="range-value" id="geopolitical-val">5 / 10</span>
+      </div>
+    </div>
+
+    <h3 style="margin:.8rem 0 .5rem;font-size:1rem;color:var(--accent);">Socioeconomic Risk Factors</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="inflation">Inflation Pressure</label>
+        <input type="range" id="inflation" min="0" max="10" value="4" step="1">
+        <span class="range-value" id="inflation-val">4 / 10</span>
+      </div>
+      <div class="field">
+        <label for="unemployment">Unemployment Risk</label>
+        <input type="range" id="unemployment" min="0" max="10" value="3" step="1">
+        <span class="range-value" id="unemployment-val">3 / 10</span>
+      </div>
+      <div class="field">
+        <label for="gdpGrowth">GDP Growth Concern</label>
+        <input type="range" id="gdpGrowth" min="0" max="10" value="4" step="1">
+        <span class="range-value" id="gdpGrowth-val">4 / 10</span>
+      </div>
+      <div class="field">
+        <label for="debtLevel">Public Debt Level Risk</label>
+        <input type="range" id="debtLevel" min="0" max="10" value="5" step="1">
+        <span class="range-value" id="debtLevel-val">5 / 10</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="runSim" style="margin-top:.5rem;">Run Simulation</button>
+
+    <div class="chart-container">
+      <canvas id="simChart"></canvas>
+    </div>
+
+    <div id="simSummary"></div>
+  </section>
+
+  <!-- ======================== DCF CALCULATOR ======================== -->
+  <section class="card" id="dcf-section">
+    <h2>Discounted Cash Flow (DCF) Calculator</h2>
+    <p style="margin-bottom:1rem;color:var(--muted);font-size:.9rem;">
+      Enter projected free cash flows for an investment along with your discount rate to
+      calculate the Net Present Value (NPV). A terminal value is estimated using the Gordon Growth Model.
+    </p>
+
+    <div class="form-grid">
+      <div class="field">
+        <label for="dcfInitial">Initial Investment ($)</label>
+        <input type="number" id="dcfInitial" value="100000" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label for="dcfRate">Discount Rate / WACC (%)</label>
+        <input type="number" id="dcfRate" value="10" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label for="dcfTerminalGrowth">Terminal Growth Rate (%)</label>
+        <input type="number" id="dcfTerminalGrowth" value="2.5" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label for="dcfPeriods">Projection Periods (years)</label>
+        <input type="number" id="dcfPeriods" value="5" min="1" max="30">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label for="dcfCashFlows">Annual Free Cash Flows (comma-separated, $)</label>
+        <input type="text" id="dcfCashFlows" value="15000, 18000, 21000, 25000, 28000"
+               placeholder="e.g. 15000, 18000, 21000, 25000, 28000">
+      </div>
+    </div>
+
+    <button class="btn btn-accent" id="runDCF" style="margin-top:.5rem;">Calculate DCF</button>
+
+    <div class="chart-container">
+      <canvas id="dcfChart"></canvas>
+    </div>
+
+    <div id="dcfResults"></div>
+  </section>
+
+</main>
+
+<footer>
+  &copy; 2026 Niki Investment. For educational and illustrative purposes only.
+</footer>
+
+<script>
+/* ===========================================================
+   UTILITY HELPERS
+   =========================================================== */
+function fmt(n, decimals) {
+  if (decimals === undefined) decimals = 2;
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// Normal random via Box-Muller transform
+function randNormal() {
+  var u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+/* ===========================================================
+   RANGE SLIDER LIVE LABELS
+   =========================================================== */
+document.querySelectorAll('input[type="range"]').forEach(function(slider) {
+  var display = document.getElementById(slider.id + '-val');
+  if (display) {
+    slider.addEventListener('input', function() {
+      display.textContent = slider.value + ' / ' + slider.max;
+    });
+  }
+});
+
+/* ===========================================================
+   S&P 500 MONTE CARLO SIMULATION
+   =========================================================== */
+var simChartInstance = null;
+
+document.getElementById('runSim').addEventListener('click', function() {
+  var startIndex  = parseFloat(document.getElementById('startIndex').value) || 5000;
+  var years       = parseInt(document.getElementById('years').value, 10) || 10;
+  var simCount    = parseInt(document.getElementById('simCount').value, 10) || 50;
+  var baseReturn  = parseFloat(document.getElementById('baseReturn').value) / 100;
+  var baseVol     = parseFloat(document.getElementById('baseVol').value) / 100;
+
+  // Political risk (0-10 each)
+  var polStability  = parseInt(document.getElementById('polStability').value, 10);
+  var tradePolicy   = parseInt(document.getElementById('tradePolicy').value, 10);
+  var regulatoryRisk= parseInt(document.getElementById('regulatoryRisk').value, 10);
+  var geopolitical  = parseInt(document.getElementById('geopolitical').value, 10);
+
+  // Socioeconomic risk (0-10 each)
+  var inflation     = parseInt(document.getElementById('inflation').value, 10);
+  var unemployment  = parseInt(document.getElementById('unemployment').value, 10);
+  var gdpGrowth     = parseInt(document.getElementById('gdpGrowth').value, 10);
+  var debtLevel     = parseInt(document.getElementById('debtLevel').value, 10);
+
+  // Composite risk score (0-80 total, normalised to 0-1)
+  var totalRisk = (polStability + tradePolicy + regulatoryRisk + geopolitical +
+                   inflation + unemployment + gdpGrowth + debtLevel) / 80;
+
+  // Risk adjustments: higher composite risk reduces expected return (up to -60%)
+  // and increases volatility (up to +80%). Coefficients reflect that adverse
+  // political/socioeconomic conditions compress equity premia while amplifying
+  // uncertainty, consistent with empirical risk-premium literature.
+  var adjReturn = baseReturn * (1 - totalRisk * 0.6);
+  var adjVol    = baseVol * (1 + totalRisk * 0.8);
+
+  var months = years * 12;
+  var monthlyReturn = adjReturn / 12;
+  var monthlyVol    = adjVol / Math.sqrt(12);
+
+  var labels = [];
+  for (var m = 0; m <= months; m++) {
+    labels.push(m % 12 === 0 ? 'Y' + (m / 12) : '');
+  }
+
+  var datasets = [];
+  var finalValues = [];
+  var palette = [
+    'rgba(26,35,126,0.15)','rgba(0,137,123,0.15)','rgba(198,40,40,0.15)',
+    'rgba(255,143,0,0.15)','rgba(106,27,154,0.15)','rgba(46,125,50,0.15)'
+  ];
+
+  for (var s = 0; s < simCount; s++) {
+    var path = [startIndex];
+    for (var t = 1; t <= months; t++) {
+      var shock = randNormal();
+      var prevVal = path[t - 1];
+      var nextVal = prevVal * Math.exp((monthlyReturn - 0.5 * monthlyVol * monthlyVol) + monthlyVol * shock);
+      path.push(Math.max(nextVal, 0));
+    }
+    finalValues.push(path[months]);
+    datasets.push({
+      data: path,
+      borderColor: palette[s % palette.length],
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.3
+    });
+  }
+
+  // Summary statistics
+  finalValues.sort(function(a, b) { return a - b; });
+  var mean   = finalValues.reduce(function(a, b) { return a + b; }, 0) / finalValues.length;
+  var median = finalValues[Math.floor(finalValues.length / 2)];
+  var p5     = finalValues[Math.floor(finalValues.length * 0.05)];
+  var p95    = finalValues[Math.floor(finalValues.length * 0.95)];
+  var minVal = finalValues[0];
+  var maxVal = finalValues[finalValues.length - 1];
+
+  var cagr = (Math.pow(mean / startIndex, 1 / years) - 1) * 100;
+
+  // Render chart
+  if (simChartInstance) simChartInstance.destroy();
+  simChartInstance = new Chart(document.getElementById('simChart'), {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: 'S&P 500 Monte Carlo Paths  (risk-adjusted μ=' + (adjReturn * 100).toFixed(1) + '%, σ=' + (adjVol * 100).toFixed(1) + '%)' }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Time' }, ticks: { maxTicksLimit: years + 1 } },
+        y: { title: { display: true, text: 'Index Level' }, beginAtZero: false }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  // Summary HTML
+  var positive = mean >= startIndex;
+  document.getElementById('simSummary').innerHTML =
+    '<div class="summary-box ' + (positive ? '' : 'negative') + '">' +
+    '<p><strong>Simulations:</strong> ' + simCount + ' &nbsp;|&nbsp; <strong>Horizon:</strong> ' + years + ' years</p>' +
+    '<p><strong>Composite Risk Score:</strong> ' + (totalRisk * 100).toFixed(0) + ' / 100</p>' +
+    '<p><strong>Adj. Annual Return:</strong> ' + (adjReturn * 100).toFixed(2) + '% &nbsp;|&nbsp; <strong>Adj. Volatility:</strong> ' + (adjVol * 100).toFixed(2) + '%</p>' +
+    '<p><strong>Mean Final Index:</strong> ' + fmt(mean) + ' &nbsp;|&nbsp; <strong>Median:</strong> ' + fmt(median) + '</p>' +
+    '<p><strong>5th Percentile:</strong> ' + fmt(p5) + ' &nbsp;|&nbsp; <strong>95th Percentile:</strong> ' + fmt(p95) + '</p>' +
+    '<p><strong>Min:</strong> ' + fmt(minVal) + ' &nbsp;|&nbsp; <strong>Max:</strong> ' + fmt(maxVal) + '</p>' +
+    '<p><strong>Implied CAGR (mean):</strong> ' + fmt(cagr) + '%</p>' +
+    '</div>';
+});
+
+/* ===========================================================
+   DCF CALCULATOR
+   =========================================================== */
+var dcfChartInstance = null;
+
+document.getElementById('runDCF').addEventListener('click', function() {
+  var initial       = parseFloat(document.getElementById('dcfInitial').value) || 0;
+  var discountRate  = parseFloat(document.getElementById('dcfRate').value) / 100;
+  var terminalGrowth= parseFloat(document.getElementById('dcfTerminalGrowth').value) / 100;
+  var periods       = parseInt(document.getElementById('dcfPeriods').value, 10) || 5;
+
+  var cfInput = document.getElementById('dcfCashFlows').value;
+  var cashFlows = cfInput.split(',').map(function(s) { return parseFloat(s.trim()) || 0; });
+
+  // Pad or trim to match periods
+  while (cashFlows.length < periods) {
+    var lastCF = cashFlows.length > 0 ? cashFlows[cashFlows.length - 1] : 0;
+    cashFlows.push(lastCF * (1 + terminalGrowth));
+  }
+  cashFlows = cashFlows.slice(0, periods);
+
+  // Present values
+  var pvValues = [];
+  var cumulativePV = [];
+  var runningPV = 0;
+  for (var i = 0; i < periods; i++) {
+    var pv = cashFlows[i] / Math.pow(1 + discountRate, i + 1);
+    pvValues.push(pv);
+    runningPV += pv;
+    cumulativePV.push(runningPV);
+  }
+
+  // Terminal value using the Gordon Growth Model:
+  // TV = FCF_last × (1 + g) / (r - g), where g = terminal growth, r = discount rate
+  var terminalCF = cashFlows[periods - 1] * (1 + terminalGrowth);
+  var terminalValue = 0;
+  if (discountRate > terminalGrowth) {
+    terminalValue = terminalCF / (discountRate - terminalGrowth);
+  }
+  var pvTerminal = terminalValue / Math.pow(1 + discountRate, periods);
+
+  var totalPV = runningPV + pvTerminal;
+  var npv = totalPV - initial;
+
+  // Chart
+  var chartLabels = [];
+  var cfData = [];
+  var pvData = [];
+  for (var j = 0; j < periods; j++) {
+    chartLabels.push('Year ' + (j + 1));
+    cfData.push(cashFlows[j]);
+    pvData.push(pvValues[j]);
+  }
+  chartLabels.push('Terminal');
+  cfData.push(terminalValue);
+  pvData.push(pvTerminal);
+
+  if (dcfChartInstance) dcfChartInstance.destroy();
+  dcfChartInstance = new Chart(document.getElementById('dcfChart'), {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        { label: 'Cash Flow ($)', data: cfData, backgroundColor: 'rgba(0,137,123,0.6)' },
+        { label: 'Present Value ($)', data: pvData, backgroundColor: 'rgba(26,35,126,0.6)' }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display: true, text: 'DCF – Cash Flows vs Present Values' }
+      },
+      scales: {
+        y: { title: { display: true, text: 'Amount ($)' }, beginAtZero: true }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  // Results table + summary
+  var rows = '';
+  for (var k = 0; k < periods; k++) {
+    rows += '<tr><td>' + (k + 1) + '</td><td>$' + fmt(cashFlows[k]) + '</td><td>' +
+            (1 / Math.pow(1 + discountRate, k + 1)).toFixed(4) + '</td><td>$' + fmt(pvValues[k]) + '</td><td>$' + fmt(cumulativePV[k]) + '</td></tr>';
+  }
+
+  var isPositive = npv >= 0;
+  document.getElementById('dcfResults').innerHTML =
+    '<table class="results-table">' +
+    '<thead><tr><th>Year</th><th>Cash Flow</th><th>Discount Factor</th><th>Present Value</th><th>Cumulative PV</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>' +
+    '<div class="summary-box ' + (isPositive ? '' : 'negative') + '">' +
+    '<p><strong>Sum of Discounted Cash Flows:</strong> $' + fmt(runningPV) + '</p>' +
+    '<p><strong>Terminal Value:</strong> $' + fmt(terminalValue) + ' &nbsp;→&nbsp; <strong>PV of Terminal:</strong> $' + fmt(pvTerminal) + '</p>' +
+    '<p><strong>Total Enterprise Value:</strong> $' + fmt(totalPV) + '</p>' +
+    '<p><strong>Initial Investment:</strong> $' + fmt(initial) + '</p>' +
+    '<p style="font-size:1.1rem;"><strong>Net Present Value (NPV):</strong> ' +
+    '<span style="color:' + (isPositive ? 'green' : '#c62828') + ';font-weight:700;">$' + fmt(npv) + '</span></p>' +
+    '<p>' + (isPositive ? '✅ The investment appears to create value.' : '❌ The investment does not meet the required return.') + '</p>' +
+    '</div>';
+});
+</script>
+
+</body>
+</html>
