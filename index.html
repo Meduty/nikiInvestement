@@ -251,9 +251,12 @@ document.getElementById('runSim').addEventListener('click', function() {
   var totalRisk = (polStability + tradePolicy + regulatoryRisk + geopolitical +
                    inflation + unemployment + gdpGrowth + debtLevel) / 80;
 
-  // Risk adjustments: higher risk reduces expected return and increases volatility
-  var adjReturn = baseReturn * (1 - totalRisk * 0.6);   // up to -60 % of return
-  var adjVol    = baseVol * (1 + totalRisk * 0.8);       // up to +80 % of volatility
+  // Risk adjustments: higher composite risk reduces expected return (up to -60%)
+  // and increases volatility (up to +80%). Coefficients reflect that adverse
+  // political/socioeconomic conditions compress equity premia while amplifying
+  // uncertainty, consistent with empirical risk-premium literature.
+  var adjReturn = baseReturn * (1 - totalRisk * 0.6);
+  var adjVol    = baseVol * (1 + totalRisk * 0.8);
 
   var months = years * 12;
   var monthlyReturn = adjReturn / 12;
@@ -366,7 +369,8 @@ document.getElementById('runDCF').addEventListener('click', function() {
     cumulativePV.push(runningPV);
   }
 
-  // Terminal value (Gordon Growth Model)
+  // Terminal value using the Gordon Growth Model:
+  // TV = FCF_last × (1 + g) / (r - g), where g = terminal growth, r = discount rate
   var terminalCF = cashFlows[periods - 1] * (1 + terminalGrowth);
   var terminalValue = 0;
   if (discountRate > terminalGrowth) {
